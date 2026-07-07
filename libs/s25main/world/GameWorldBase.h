@@ -87,7 +87,7 @@ public:
 
     /// Can a node be used for a road (no flag/bld, no other road, no danger...)
     /// Should only be used for the points between the 2 flags of a road
-    bool IsRoadAvailable(bool boat_road, MapPoint pt) const;
+    bool IsRoadAvailable(bool boat_road, MapPoint pt, const std::set<MapPoint,MapPointLess> * roadPointsToIgnore = nullptr) const;
     /// Check if this road already exists completely
     bool RoadAlreadyBuilt(bool boat_road, MapPoint start, const std::vector<Direction>& route);
     bool IsOnRoad(const MapPoint& pt) const;
@@ -219,6 +219,8 @@ public:
     bool HasLua() const { return lua != nullptr; }
     LuaInterfaceGame& GetLua() const { return *lua; }
     void SetLua(LuaInterfaceGame* newLua) { lua = newLua; }
+
+    bool IsFlagPlacementPossible(MapPoint pt, unsigned char player)const;
 
 protected:
     /// Called when the visibility of point changed for a player

@@ -86,7 +86,7 @@ public:
     BuildingQuality GetBuildingQualityAnyOwner(MapPoint pt) const;
     /// Tries to find a free path for a road and return length and the route
     bool FindFreePathForNewRoad(MapPoint start, MapPoint target, std::vector<Direction>* route = nullptr,
-                                unsigned* length = nullptr) const;
+                                unsigned* length = nullptr,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore = nullptr) const;
     /// Tries to find a route from start to target, returning length of that route if it exists
     bool FindPathOnRoads(const noRoadNode& start, const noRoadNode& target, unsigned* length = nullptr) const;
     /// Checks if it is allowed to build catapults

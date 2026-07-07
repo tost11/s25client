@@ -89,7 +89,7 @@ ShipPathData& GameWorldBase::GetShipPathData() const
     return *shipPathData;
 }
 
-bool GameWorldBase::IsRoadAvailable(const bool boat_road, const MapPoint pt) const
+bool GameWorldBase::IsRoadAvailable(const bool boat_road, const MapPoint pt,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore) const
 {
     // Hindernisse
     if(GetNode(pt).obj)
@@ -110,8 +110,12 @@ bool GameWorldBase::IsRoadAvailable(const bool boat_road, const MapPoint pt) con
             return false;
 
         // Other roads at this point?
-        if(GetPointRoad(pt, dir) != PointRoad::None)
-            return false;
+        if(GetPointRoad(pt, dir) != PointRoad::None){
+            //but not in list off ignored points roadPoints (AI-Road replacement)
+            if(roadPointsToIgnore == nullptr || roadPointsToIgnore->find(pt) == roadPointsToIgnore->end()){
+                return false;
+            }
+        }
     }
 
     // Terrain (unterscheiden, ob Wasser und Landweg)
@@ -720,4 +724,20 @@ void GameWorldBase::SetComputerBarrier(const MapPoint& pt, unsigned radius)
 bool GameWorldBase::IsInsideComputerBarrier(const MapPoint& pt) const
 {
     return helpers::contains(ptsInsideComputerBarriers, pt);
+}
+
+bool GameWorldBase::IsFlagPlacementPossible(MapPoint pt, unsigned char player) const
+{
+    if(GetBQ(pt, player) == BuildingQuality::Nothing)
+        return false;
+    // There must be no other flag around that point
+    if(IsFlagAround(pt))
+        return false;
+
+    // Gucken, nicht, dass schon eine Flagge dasteht
+    if(GetNO(pt)->GetType() != NodalObjectType::Flag)
+    {
+        return true;
+    }
+    return false;
 }

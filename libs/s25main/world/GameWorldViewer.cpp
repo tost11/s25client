@@ -302,9 +302,9 @@ void GameWorldViewer::RemoveVisualRoad(const MapPoint& start, const std::vector<
     RecalcBQForRoad(curPt);
 }
 
-bool GameWorldViewer::IsRoadAvailable(bool isWaterRoad, const MapPoint& pt) const
+bool GameWorldViewer::IsRoadAvailable(bool isWaterRoad, const MapPoint& pt,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore) const
 {
-    return !IsOnRoad(pt) && GetWorld().IsRoadAvailable(isWaterRoad, pt);
+    return !IsOnRoad(pt) && GetWorld().IsRoadAvailable(isWaterRoad, pt, roadPointsToIgnore);
 }
 
 /// Get the "youngest" FOWObject of all players who share the view with the local player

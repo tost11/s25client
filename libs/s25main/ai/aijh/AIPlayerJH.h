@@ -147,6 +147,8 @@ public:
     void HandleNoMoreResourcesReachable(MapPoint pt, BuildingType bld);
     // A new ship has been built -> handle it
     void HandleShipBuilt(MapPoint pt);
+    // A flag has lots of goods
+    void HandleFlagFull(MapPoint pt);
     // A new road has been built -> handle it
     void HandleRoadConstructionComplete(MapPoint pt, Direction dir);
     // A road construction has failed -> handle it
@@ -213,6 +215,12 @@ public:
 
     bool NoEnemyHarbor();
 
+    //checks flags full of resources if on it long roads exist that can be optimized
+    void ImproveFullRoads();
+
+    //check better way for this path exists by replacing it to other flag nerby
+    void findBestAlternativePath(const RoadSegment* route,unsigned currentLength);
+
     MapPoint UpgradeBldPos;
 
 private:
@@ -227,6 +235,9 @@ private:
     /// Resource maps, containing a rating for every map point concerning a resource
     helpers::EnumArray<AIResourceMap, AIResource> resourceMaps;
 
+    /// cached flags with height amount of resources since last check (for road improvements)
+    std::set<MapPoint, MapPointLess> fullFlags;
+
     unsigned attack_interval;
     unsigned build_interval;
     int isInitGfCompleted;
@@ -236,7 +247,7 @@ private:
     std::unique_ptr<BuildingPlanner> bldPlanner;
     std::unique_ptr<AIConstruction> construction;
 
-    Subscription subBuilding, subExpedition, subResource, subRoad, subShip, subBQ;
+    Subscription subBuilding, subExpedition, subResource, subRoad, subShip, subBQ, subFlag;
     std::vector<MapPoint> nodesWithOutdatedBQ;
 };
 

@@ -350,6 +350,26 @@ const noFlag& RoadSegment::GetOtherFlag(const noFlag& flag) const
     else
         return dynamic_cast<noFlag&>(*f2);
 }
+
+const noFlag* RoadSegment::GetOtherFlagSave(const noFlag& flag) const
+{
+    if(GetNodeID(flag))
+    {
+        if(f1->GetType() != NodalObjectType::Flag)
+        {
+            return nullptr;
+        }
+        return dynamic_cast<noFlag*>(f1);
+    }else
+    {
+        if(f2->GetType() != NodalObjectType::Flag)
+        {
+            return nullptr;
+        }
+        return dynamic_cast<noFlag*>(f2);
+    }
+}
+
 /**
  * Return last road direction to flag at the other end of the road
  */

@@ -17,9 +17,9 @@ struct PathConditionRoad
     {}
 
     // Called for every node but the start & goal and should return true, if this point is usable
-    BOOST_FORCEINLINE bool IsNodeOk(const MapPoint& pt) const
+    BOOST_FORCEINLINE bool IsNodeOk(const MapPoint& pt,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore = nullptr) const
     {
-        return worldOrViewer.IsPlayerTerritory(pt) && worldOrViewer.IsRoadAvailable(isBoatRoad, pt);
+        return worldOrViewer.IsPlayerTerritory(pt) && worldOrViewer.IsRoadAvailable(isBoatRoad, pt, roadPointsToIgnore);
     }
 
     // Called for every edge (node to other node)

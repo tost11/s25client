@@ -12,6 +12,7 @@
 #include "gameTypes/Direction.h"
 #include "gameTypes/MapCoordinates.h"
 #include "gameTypes/MapTypes.h"
+#include <set>
 
 class FOWObject;
 class GamePlayer;
@@ -75,7 +76,7 @@ public:
     /// Remove a visual (not yet built) road
     void RemoveVisualRoad(const MapPoint& start, const std::vector<Direction>& route);
     /// Checks if the road can be build in the world and additonally if there is no virtual road at that point
-    bool IsRoadAvailable(bool isWaterRoad, const MapPoint& pt) const;
+    bool IsRoadAvailable(bool isWaterRoad, const MapPoint& pt,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore = nullptr) const;
 
     /// Get the "youngest" FOWObject of all players who share the view with the local player
     const FOWObject* GetYoungestFOWObject(MapPoint pos) const;

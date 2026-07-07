@@ -29,12 +29,13 @@ struct Param_RoadPath
 {
     /// Boat or normal road
     bool boat_road;
+    const std::set<MapPoint,MapPointLess>* roadPointsToIgnore;
 };
 
 bool IsPointOK_RoadPath(const GameWorldBase& gwb, const MapPoint pt, const Direction, const void* param)
 {
     const auto* prp = static_cast<const Param_RoadPath*>(param);
-    return makePathConditionRoad(gwb, prp->boat_road).IsNodeOk(pt);
+    return makePathConditionRoad(gwb, prp->boat_road).IsNodeOk(pt,prp->roadPointsToIgnore);
 }
 
 /// Condition for comfort road construction with a possible flag every 2 steps
@@ -225,12 +226,15 @@ int AIInterface::CalcResourceValue(const MapPoint pt, AIResource res, helpers::O
 }
 
 bool AIInterface::FindFreePathForNewRoad(MapPoint start, MapPoint target, std::vector<Direction>* route /*= nullptr*/,
-                                         unsigned* length /*= nullptr*/) const
+                                         unsigned* length /*= nullptr*/,const std::set<MapPoint,MapPointLess> * roadPointsToIgnore/*= nullptr*/) const
 {
-    bool boat = false;
+    Param_RoadPath roadParams;
+    roadParams.boat_road = false;
+    roadParams.roadPointsToIgnore = roadPointsToIgnore;
+
     return gwb.GetFreePathFinder().FindPathAlternatingConditions(start, target, false, 100, route, length, nullptr,
                                                                  IsPointOK_RoadPath, IsPointOK_RoadPathEvenStep,
-                                                                 nullptr, (void*)&boat);
+                                                                 nullptr, (void*)&roadParams);
 }
 
 bool AIInterface::CalcBQSumDifference(const MapPoint pt1, const MapPoint pt2) const

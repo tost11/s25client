@@ -23,6 +23,7 @@
 #include "network/GameMessages.h"
 #include "notifications/BuildingNote.h"
 #include "notifications/ExpeditionNote.h"
+#include "notifications/FlagNote.h"
 #include "notifications/NodeNote.h"
 #include "notifications/ResourceNote.h"
 #include "notifications/RoadNote.h"
@@ -110,6 +111,11 @@ void HandleShipNote(AIEventManager& eventMgr, const ShipNote& note)
 {
     if(note.type == ShipNote::Constructed)
         eventMgr.AddAIEvent(std::make_unique<AIEvent::Location>(AIEvent::EventType::ShipBuilt, note.pos));
+}
+void HandleFlagNote(AIEventManager& eventMgr, const FlagNote& note)
+{
+    if(note.type == FlagNote::Full)
+        eventMgr.AddAIEvent(std::make_unique<AIEvent::Location>(AIEvent::EventType::FlagFull, note.pos));
 }
 } // namespace
 
@@ -210,6 +216,10 @@ AIPlayerJH::AIPlayerJH(const unsigned char playerId, const GameWorldBase& gwb, c
         if(note.player == playerId)
             HandleShipNote(eventManager, note);
     });
+    subFlag = notifications.subscribe<FlagNote>([this, playerId](const FlagNote& note) {
+        if(note.player == playerId)
+            HandleFlagNote(eventManager, note);
+    });
     subBQ = recordBQsToUpdate(this->gwb, this->nodesWithOutdatedBQ);
 }
 
@@ -305,6 +315,11 @@ void AIPlayerJH::RunGF(const unsigned gf, bool gfisnwf)
     {
         CheckForUnconnectedBuildingSites();
         PlanNewBuildings(gf);
+    }
+
+    if((gf + playerId * 13) % 510 == 0)
+    {
+        ImproveFullRoads();
     }
 }
 
@@ -1344,6 +1359,10 @@ void AIPlayerJH::HandleShipBuilt(const MapPoint pt)
         if(creatingShipyard) // might have been destroyed by now
             aii.SetProductionEnabled(creatingShipyard->GetPos(), false);
     }
+}
+
+void AIPlayerJH::HandleFlagFull(MapPoint pt) {
+    fullFlags.emplace(pt);
 }
 
 void AIPlayerJH::HandleBorderChanged(const MapPoint pt)
@@ -2485,6 +2504,154 @@ unsigned AIPlayerJH::CalcMilSettings()
     }
     // LOG.write(("player %i inland milsetting %i \n",playerId,returnvalue);
     return returnValue;
+}
+
+void AIPlayerJH::findBestAlternativePath(const RoadSegment* route,unsigned currentLength) {
+    noRoadNode * f1 = route->GetF1();
+    noRoadNode * f2 = route->GetF2();
+
+    std::set<MapPoint,MapPointLess> roadPointsToIgnore;
+
+    MapPoint toCheck1 = f1->GetPos();
+    for(unsigned i=0;i < route->GetLength();i++){
+        roadPointsToIgnore.emplace(toCheck1);
+        toCheck1 = gwb.GetNeighbour(toCheck1,route->GetDir(false,i));
+    }
+
+    unsigned bestCost = 0;
+    std::vector<Direction> bestRoute;
+    MapPoint bestStartPoint;
+
+    std::vector<std::pair<noRoadNode*,unsigned>> toCheckFlags;
+
+    for(unsigned int i=0;i<6;i++)
+    {
+        RoadSegment* s = f1->GetRoute((Direction)i);
+        if(s == nullptr || s->GetLength() > 3)
+        {
+            continue;
+        }
+        unsigned costs = s->GetLength();
+        noRoadNode* alt = s->GetNodeID(*f1) == 1 ? s->GetF1() : s ->GetF2();
+        if(f2 == alt || alt->GetType() != NodalObjectType::Flag)
+        {
+            continue;
+        }
+        toCheckFlags.push_back(std::pair(alt,costs));
+        for(unsigned int j=0;j<6;j++){
+            RoadSegment* s2 = alt->GetRoute((Direction)j);
+            if(s2 == nullptr || s2->GetLength() > 3)
+            {
+                continue;
+            }
+            unsigned costs2 = s2->GetLength() + costs;
+            noRoadNode* alt2 = s2->GetNodeID(*alt) == 1 ? s2->GetF1() : s2 ->GetF2();
+            if(f2 == alt2 || alt == alt2 || alt2->GetType() != NodalObjectType::Flag)
+            {
+                continue;
+            }
+            toCheckFlags.push_back(std::pair(alt2,costs2));
+        }
+    }
+
+    for(auto & it:toCheckFlags){
+        unsigned len;
+        std::vector<Direction> foundRoute;
+        if(aii.FindFreePathForNewRoad(f2->GetPos(),it.first->GetPos(),&foundRoute,&len,&roadPointsToIgnore)){
+            if(bestCost == 0 || it.second + len < bestCost){
+                bestCost = it.second + len;
+                bestRoute = foundRoute;
+                bestStartPoint = f2->GetPos();
+            }
+        }
+    }
+
+    toCheckFlags.clear();
+
+    for(unsigned int i=0;i<6;i++)
+    {
+        RoadSegment* s = f2->GetRoute((Direction)i);
+        if(s == nullptr || s->GetLength() > 3)
+        {
+            continue;
+        }
+        unsigned costs = s->GetLength();
+        noRoadNode* alt = s->GetNodeID(*f2) == 1 ? s->GetF1() : s->GetF2();
+        if(f1 == alt || alt->GetType() != NodalObjectType::Flag)
+        {
+            continue;
+        }
+        toCheckFlags.push_back(std::pair(alt,costs));
+        for(unsigned int j=0;j<6;j++){
+            RoadSegment* s2 = alt->GetRoute((Direction)j);
+            if(s2 == nullptr || s2->GetLength() > 3)
+            {
+                continue;
+            }
+            unsigned costs2 = s2->GetLength() + costs;
+            noRoadNode* alt2 = s2->GetNodeID(*alt) == 1 ? s2->GetF1() : s2->GetF2();
+            if(f1 == alt2 || alt == alt2 || alt2->GetType() != NodalObjectType::Flag)
+            {
+                continue;
+            }
+            toCheckFlags.push_back(std::pair(alt2,costs2));
+        }
+    }
+
+    for(auto & it:toCheckFlags){
+        unsigned len;
+        std::vector<Direction> foundRoute;
+        if(aii.FindFreePathForNewRoad(f1->GetPos(),it.first->GetPos(),&foundRoute,&len,&roadPointsToIgnore)){
+            if(len < currentLength && (bestCost == 0 || it.second + len < bestCost)){
+                bestCost = it.second + len;
+                bestRoute = foundRoute;
+                bestStartPoint = f1->GetPos();
+            }
+        }
+    }
+
+    if(bestCost != 0){
+        // LOG.write("player %i Found alternative for long road with many sorceress\n") % aii.GetPlayerId();
+        aii.DestroyRoad(f1->GetPos(),route->GetDir(route->GetF2() == f1,0));
+        aii.BuildRoad(bestStartPoint,false,bestRoute);
+    }
+}
+
+void AIPlayerJH::ImproveFullRoads() {
+
+    std::list<const noFlag*> flagsToCheck = std::list<const noFlag*>();
+    //check all fullFlags motified by since last check
+    for(const auto& pos : fullFlags){
+        auto flag = gwb.GetSpecObj<noFlag>(pos);
+        if(flag != nullptr){
+            flagsToCheck.push_back(flag);
+        }
+    }
+    //clear for collection until next check
+    fullFlags.clear();
+
+
+    while(!flagsToCheck.empty()){
+        const noFlag * flag = flagsToCheck.front();
+        flagsToCheck.pop_front();
+        for(const auto & route : flag->getRoutes())
+        {
+            if(route == nullptr)
+            {
+                continue;
+            }
+            const noFlag* f = route->GetOtherFlagSave(*flag);
+            if(f != nullptr){
+                //TODO maby implement improving of path size 3 or roads with slope
+                if(route->GetRoadType() != RoadType::Water && route->GetLength() >= 3){
+                    //try to set flag on first, if not working try to replace path with better one
+                    if(!construction->SetFlagsAlongRoad(*f,route->GetDir(route->GetF2() == f,0))){//new flags on rout possible this is fine
+                        findBestAlternativePath(route,route->GetLength());
+                    }
+                }
+            }
+        }
+    }
 }
 
 } // namespace AIJH

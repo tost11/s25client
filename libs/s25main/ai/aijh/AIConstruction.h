@@ -78,7 +78,7 @@ public:
 
     void ExecuteJobs(unsigned limit);
     /// Set flags along the road starting at the given node in the given direction
-    void SetFlagsAlongRoad(const noRoadNode& roadNode, Direction dir);
+    bool SetFlagsAlongRoad(const noRoadNode& roadNode, Direction dir);
     /// To be called after a new construction site was added
     void ConstructionOrdered(const BuildJob& job);
     /// To be called when the current pending construction orders were processed (usually on NWF)

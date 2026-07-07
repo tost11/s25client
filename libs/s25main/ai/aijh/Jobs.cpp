@@ -360,6 +360,13 @@ void EventJob::ExecuteJob()
             state = JobState::Finished;
         }
         break;
+        case EventType::FlagFull:
+        {
+            const auto& lvb = *checkedCast<AIEvent::Location*>(ev.get());
+            aijh.HandleFlagFull(lvb.GetPos());
+            state = JobState::Finished;
+        }
+        break;
         case EventType::RoadConstructionComplete:
         {
             const auto& dvb = *checkedCast<AIEvent::Direction*>(ev.get());

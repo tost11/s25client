@@ -113,7 +113,7 @@ void AIConstruction::ExecuteJobs(unsigned limit)
     }
 }
 
-void AIConstruction::SetFlagsAlongRoad(const noRoadNode& roadNode, Direction dir)
+bool AIConstruction::SetFlagsAlongRoad(const noRoadNode& roadNode, Direction dir)
 {
     // does the roadsegment still exist?
     const RoadSegment& roadSeg = *roadNode.GetRoute(dir);
@@ -123,12 +123,17 @@ void AIConstruction::SetFlagsAlongRoad(const noRoadNode& roadNode, Direction dir
     curPos = aii.gwb.GetNeighbour(curPos, roadSeg.GetDir(isBwdDir, 0));
     // Start after getting first neighbor (min distance == 2)
     // and skip last 2 points (min distance and last is flag)
+    bool setFlag = false;
     for(unsigned i = 1; i + 2 < roadSeg.GetLength(); ++i)
     {
         curPos = aii.gwb.GetNeighbour(curPos, roadSeg.GetDir(isBwdDir, i));
-        aii.SetFlag(curPos);
-        constructionlocations.push_back(curPos);
+        if(aii.gwb.IsFlagPlacementPossible(curPos,aii.GetPlayerId())){
+            setFlag = true;
+            aii.SetFlag(curPos);
+            constructionlocations.push_back(curPos);
+        }
     }
+    return setFlag;
 }
 
 std::unique_ptr<BuildJob> AIConstruction::GetBuildJob()

@@ -14,6 +14,7 @@
 #include "figures/nofCarrier.h"
 #include "helpers/EnumRange.h"
 #include "network/GameClient.h"
+#include "notifications/FlagNote.h"
 #include "ogl/glArchivItem_Bitmap.h"
 #include "ogl/glSmartBitmap.h"
 #include "world/GameWorld.h"
@@ -142,6 +143,10 @@ void noFlag::AddWare(std::unique_ptr<Ware> ware)
 
     if(nextDir != RoadPathDirection::None)
         GetRoute(toDirection(nextDir))->AddWareJob(this);
+
+    if(wares.size() >= 7){
+        world->GetNotifications().publish(FlagNote(FlagNote::Full, player, pos));
+    }
 }
 
 /**

@@ -104,6 +104,8 @@ public:
     void CarrierAbrogated(nofCarrier* carrier);
     /// given a flag returns the flag at the other end
     const noFlag& GetOtherFlag(const noFlag& flag) const;
+    /// given a flag returns the flag at the other end or null if other end not a flag
+    const noFlag* GetOtherFlagSave(const noFlag& flag) const;
     /// given a flag returns last direction of the route towards the other flag
     Direction GetOtherFlagDir(const noFlag& flag) const;
 

@@ -21,6 +21,7 @@ enum class EventType
     ExpeditionWaiting,
     TreeChopped,
     ShipBuilt,
+    FlagFull,
     ResourceUsed,
     RoadConstructionComplete,
     RoadConstructionFailed,
